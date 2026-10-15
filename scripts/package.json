@@ -1,0 +1,8 @@
+{
+  "name": "ps2-web-scripts",
+  "private": true,
+  "description": "Headless check that the static page loads Play!. Not part of the site.",
+  "dependencies": {
+    "puppeteer-core": "^25.14.0"
+  }
+}

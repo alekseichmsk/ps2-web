@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1116">
+  <meta name="description" content="Запуск своих образов PlayStation 2 в браузере через эмулятор Play!.">
+  <title>PS2 в браузере</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css">
+  <script>
+    window.coi = { quiet: true };
+  </script>
+  <script src="coi-serviceworker.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h1>PS2 в браузере</h1>
+          <p class="lede">Свои игры PlayStation 2 через эмулятор Play!. Образ читается только на этом устройстве и никуда не отправляется.</p>
+        </div>
+      </div>
+      <p class="note">На компьютере часть игр идёт с нормальной скоростью. На телефоне и планшете будет медленно: низкий кадр/с, нагрев и рывки звука.</p>
+    </header>
+
+    <section id="stage" class="stage" aria-label="Экран игры">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="outputCanvas" width="640" height="480" tabindex="-1" aria-label="Изображение игры"></canvas>
+        <div class="hud" aria-hidden="true">
+          <span id="fps" class="chip">— кадр/с</span>
+          <span id="pad-state" class="chip"></span>
+        </div>
+        <div id="banner" class="banner">
+          <strong id="banner-title">Загружаем эмулятор</strong>
+          <span id="banner-text">Это займёт несколько секунд. При первом открытии страница один раз перезагрузится.</span>
+        </div>
+        <div id="overlay" class="overlay" hidden>
+          <div class="shoulder-row">
+            <div class="shoulder-group">
+              <button type="button" data-code="Key2" aria-label="L2">L2</button>
+              <button type="button" data-code="Key1" aria-label="L1">L1</button>
+            </div>
+            <div class="sys">
+              <button type="button" data-code="Backspace" aria-label="Select">Селект</button>
+              <button type="button" data-code="Enter" aria-label="Start">Старт</button>
+            </div>
+            <div class="shoulder-group">
+              <button type="button" data-code="Key8" aria-label="R1">R1</button>
+              <button type="button" data-code="Key9" aria-label="R2">R2</button>
+            </div>
+          </div>
+          <div class="pad-row">
+            <div class="dpad" aria-label="Крестовина">
+              <button type="button" class="up" data-code="ArrowUp" aria-label="Вверх">▲</button>
+              <button type="button" class="left" data-code="ArrowLeft" aria-label="Влево">◀</button>
+              <button type="button" class="right" data-code="ArrowRight" aria-label="Вправо">▶</button>
+              <button type="button" class="down" data-code="ArrowDown" aria-label="Вниз">▼</button>
+            </div>
+            <div class="face" aria-label="Кнопки действий">
+              <button type="button" class="tri" data-code="KeyS" aria-label="Треугольник">△</button>
+              <button type="button" class="sq" data-code="KeyA" aria-label="Квадрат">□</button>
+              <button type="button" class="cir" data-code="KeyX" aria-label="Круг">○</button>
+              <button type="button" class="ex" data-code="KeyZ" aria-label="Крест">×</button>
+            </div>
+          </div>
+          <div class="stick-row">
+            <div class="stick" data-stick="left" data-hneg="KeyF" data-hpos="KeyH" data-vneg="KeyT" data-vpos="KeyG" role="application" aria-label="Левый стик">
+              <div class="nub">Л</div>
+            </div>
+            <button type="button" class="mini" data-code="Key3" aria-label="L3">L3</button>
+            <button type="button" class="mini" data-code="Key0" aria-label="R3">R3</button>
+            <div class="stick" data-stick="right" data-hneg="KeyJ" data-hpos="KeyL" data-vneg="KeyI" data-vpos="KeyK" role="application" aria-label="Правый стик">
+              <div class="nub">П</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stage-actions">
+        <button type="button" id="fullscreen-btn" class="btn">На весь экран</button>
+        <button type="button" id="touch-btn" class="btn" aria-pressed="false">Экранный геймпад</button>
+        <span id="version" class="version">Play!</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="actions">
+        <button type="button" id="pick-btn" class="btn primary">Выбрать образ</button>
+        <input id="file" type="file" tabindex="-1" aria-hidden="true">
+        <p class="hint">ISO, CHD, CSO, ISZ, BIN или ELF. BIOS не нужен. На телефоне удобнее CHD: файл меньше.</p>
+      </div>
+      <p id="status" class="status" role="status" data-kind="pending">Загружаем эмулятор…</p>
+    </section>
+
+    <details class="help">
+      <summary>Управление</summary>
+      <div class="help-grid">
+        <table>
+          <caption>Клавиатура</caption>
+          <thead>
+            <tr><th>Кнопка PS2</th><th>Клавиша</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Крестовина</td><td>Стрелки</td></tr>
+            <tr><td>Левый стик</td><td>F влево, H вправо, T вверх, G вниз</td></tr>
+            <tr><td>Правый стик</td><td>J влево, L вправо, I вверх, K вниз</td></tr>
+            <tr><td>Квадрат □</td><td>A</td></tr>
+            <tr><td>Крест ×</td><td>Z</td></tr>
+            <tr><td>Треугольник △</td><td>S</td></tr>
+            <tr><td>Круг ○</td><td>X</td></tr>
+            <tr><td>Start</td><td>Enter</td></tr>
+            <tr><td>Select</td><td>Backspace</td></tr>
+            <tr><td>L1, L2, L3</td><td>1, 2, 3</td></tr>
+            <tr><td>R1, R2, R3</td><td>8, 9, 0</td></tr>
+          </tbody>
+        </table>
+        <div class="help-copy">
+          <h2>Геймпад</h2>
+          <p>Подойдёт контроллер, который браузер видит со стандартной раскладкой: нижняя кнопка — крест, правая — круг, левая — квадрат, верхняя — треугольник. Плечи — L1/R1 и L2/R2, кнопки по центру — Select и Start, нажатие стиков — L3 и R3.</p>
+          <h2>Экран</h2>
+          <p>Кнопка «На весь экран» разворачивает картинку вместе с экранным геймпадом. На части телефонов система не даёт настоящий полный экран: тогда страница просто занимает всё окно.</p>
+          <p>Звук включается после первого нажатия. Если образ не стартовал, откройте журнал: туда пишется вывод эмулятора.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="help" id="log-details">
+      <summary>Журнал эмулятора</summary>
+      <pre id="log"></pre>
+    </details>
+
+    <footer class="foot">
+      <p>Загружайте только образы игр, которыми вы владеете легально. В этом сайте нет BIOS и нет игр.</p>
+      <p>Эмулятор — <a href="https://github.com/jpd002/Play-">Play!</a> (Жан-Филип Дежарден), экспериментальная браузерная сборка. Список совместимости: <a href="https://github.com/jpd002/Play-Compatibility/issues">Play-Compatibility</a>. Официальный сайт: <a href="https://purei.org/">purei.org</a>.</p>
+    </footer>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

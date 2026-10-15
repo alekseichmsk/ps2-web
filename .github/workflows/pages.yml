@@ -1,0 +1,51 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check vendored Play! build
+        run: |
+          test -f site/index.html
+          test -f site/coi-serviceworker.js
+          test -f site/emulator/Play.js
+          test -f site/emulator/Play.wasm
+          test -f site/emulator/License.txt
+          grep -q 'id="outputCanvas"' site/index.html
+          grep -q 'coi-serviceworker.js' site/index.html
+          grep -q 'export default Play' site/emulator/Play.js
+          grep -q 'const EMULATOR_VERSION = "' site/app.js
+          (cd site/emulator && sha256sum -c SHA256SUMS)
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
